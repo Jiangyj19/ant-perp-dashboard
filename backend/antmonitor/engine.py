@@ -647,13 +647,20 @@ def calculate(snapshots: dict, config: dict, now_ms: int) -> dict:
             unrealized = 0.0
         realized = _number(ledger.get("realized_pnl"))
         paid_fees = _nonnegative(ledger.get("fees_paid"))
-        pnl_legs[exchange] = {"unrealized": unrealized, "unrealized_usdt": usdt(unrealized, leg["quote"]),
-                              "realized": realized, "realized_usdt": usdt(realized, leg["quote"]),
-                              "funding": cumulative, "funding_usdt": usdt(cumulative, leg["quote"]),
-                              "fees": paid_fees, "fees_usdt": usdt(paid_fees, leg["quote"]),
-                              "quote_currency": leg["quote"], "complete": ledger.get("complete") is True,
-                              "timestamp": position.get("timestamp"), "source": ledger.get("source"),
-                              "formula": "trading-only realized + unrealized + separately accounted funding − positive fees paid; exchange aggregate realized PnL is not reused"}
+        leg_pnl = {"unrealized": unrealized, "unrealized_usdt": usdt(unrealized, leg["quote"]),
+                   "realized": realized, "realized_usdt": usdt(realized, leg["quote"]),
+                   "funding": cumulative, "funding_usdt": usdt(cumulative, leg["quote"]),
+                   "fees": paid_fees, "fees_usdt": usdt(paid_fees, leg["quote"]),
+                   "quote_currency": leg["quote"], "complete": ledger.get("complete") is True,
+                   "timestamp": position.get("timestamp"), "source": ledger.get("source"),
+                   "formula": "trading-only realized + unrealized + separately accounted funding − positive fees paid; exchange aggregate realized PnL is not reused"}
+        leg_components = [leg_pnl[key] for key in ("realized_usdt", "unrealized_usdt", "funding_usdt", "fees_usdt")]
+        leg_strict_total = (leg_pnl["realized_usdt"] + leg_pnl["unrealized_usdt"] + leg_pnl["funding_usdt"] - leg_pnl["fees_usdt"]
+                            if leg_pnl["complete"] and all(value is not None for value in leg_components) else None)
+        leg_pnl["total_usdt"] = leg_strict_total
+        leg_pnl["current_total_usdt"] = leg_strict_total if leg_strict_total is not None else leg_pnl["unrealized_usdt"]
+        leg_pnl["current_total_mode"] = "complete_exchange" if leg_strict_total is not None else "current_unrealized" if leg_pnl["current_total_usdt"] is not None else "unavailable"
+        pnl_legs[exchange] = leg_pnl
     funding_net = _sum_known([funding_legs[exchange]["per_8h_usdt"] for exchange in EXCHANGES])
     funding_cumulative = _sum_known([funding_legs[exchange]["cumulative_usdt"] for exchange in EXCHANGES])
     funding24 = _sum_known([funding_legs[exchange]["past_24h_usdt"] for exchange in EXCHANGES])

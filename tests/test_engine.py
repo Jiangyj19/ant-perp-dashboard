@@ -252,6 +252,9 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(pnl["total_usdt"], 162)
         self.assertEqual(pnl["current_total_usdt"], 162)
         self.assertEqual(pnl["current_total_mode"], "complete_strategy")
+        self.assertEqual(pnl["legs"]["okx"]["current_total_usdt"], 89)
+        self.assertEqual(pnl["legs"]["hl"]["current_total_usdt"], 73)
+        self.assertEqual(pnl["legs"]["okx"]["current_total_mode"], "complete_exchange")
         for key in ("realized_pnl", "funding_pnl", "fees_paid", "complete"):
             snapshots, config = fixture()
             snapshots["okx"]["ledger"].pop(key)
@@ -259,6 +262,8 @@ class EngineTests(unittest.TestCase):
             self.assertIsNone(pnl["total_usdt"])
             self.assertEqual(pnl["current_total_usdt"], 10)
             self.assertEqual(pnl["current_total_mode"], "current_unrealized")
+            self.assertEqual(pnl["legs"]["okx"]["current_total_usdt"], -20)
+            self.assertEqual(pnl["legs"]["hl"]["current_total_usdt"], 73)
 
     def test_real_zero_ledger_totals_are_valid(self):
         snapshots, config = fixture()
