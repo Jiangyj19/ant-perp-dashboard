@@ -69,6 +69,9 @@ sudo mkdir -p "$NEXT_DIR"
 sudo tar -xzf "$REMOTE_ARCHIVE_PLACEHOLDER" -C "$NEXT_DIR"
 rm -f "$REMOTE_ARCHIVE_PLACEHOLDER"
 sudo install -m 600 "$APP_DIR/.env" "$NEXT_DIR/.env"
+if sudo test -f "$APP_DIR/.env.friend"; then
+  sudo install -m 600 "$APP_DIR/.env.friend" "$NEXT_DIR/.env.friend"
+fi
 sudo chown -R root:root "$NEXT_DIR"
 sudo mv "$APP_DIR" "$PREV_DIR"
 sudo mv "$NEXT_DIR" "$APP_DIR"
@@ -76,6 +79,9 @@ cd "$APP_DIR"
 COMPOSE_ARGS="-f compose.yaml"
 if sudo grep -Eq '^PUBLIC_DOMAIN=.+$' .env; then
   COMPOSE_ARGS="$COMPOSE_ARGS -f deploy/compose.public.yaml"
+fi
+if sudo test -f .env.friend && sudo grep -Eq '^FRIEND_PUBLIC_DOMAIN=.+$' .env; then
+  COMPOSE_ARGS="$COMPOSE_ARGS -f deploy/compose.friend.yaml"
 fi
 if command -v docker-compose >/dev/null 2>&1; then
   compose() { sudo docker-compose $COMPOSE_ARGS "$@"; }

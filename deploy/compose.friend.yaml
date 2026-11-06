@@ -1,0 +1,40 @@
+services:
+  friend:
+    build: .
+    restart: unless-stopped
+    env_file: .env.friend
+    environment:
+      DATA_DIR: /app/data
+      CONFIG_PATH: /app/config/strategy.yaml
+      DASHBOARD_PASSWORD: ${FRIEND_DASHBOARD_PASSWORD:?Set FRIEND_DASHBOARD_PASSWORD in .env or .env.friend before startup}
+    expose:
+      - "8787"
+    volumes:
+      - friend-data:/app/data
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  proxy:
+    depends_on:
+      - monitor
+      - friend
+    environment:
+      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN:?Set PUBLIC_DOMAIN in .env before public deployment}
+      FRIEND_PUBLIC_DOMAIN: ${FRIEND_PUBLIC_DOMAIN:?Set FRIEND_PUBLIC_DOMAIN in .env before friend deployment}
+    volumes:
+      - ./deploy/Caddyfile.friend:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  friend-data:
