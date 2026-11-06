@@ -213,6 +213,7 @@ class EngineTests(unittest.TestCase):
             self.assertIsNone(result["spread"]["gross_spread_pct"])
             self.assertIsNone(result["pnl"]["unrealized_usdt"])
             self.assertIsNone(result["pnl"]["total_usdt"])
+            self.assertIsNone(result["pnl"]["current_total_usdt"])
             self.assertIsNone(result["funding"]["net_per_8h_usdt"])
             self.assertEqual(result["funding"]["legs"]["hl"]["per_interval"], -2)
             self.assertEqual(result["pnl"]["legs"]["okx"]["unrealized_usdt"], -20)
@@ -229,10 +230,15 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(pnl["funding_usdt"], 7)
         self.assertEqual(pnl["fees_usdt"], 5)
         self.assertEqual(pnl["total_usdt"], 162)
+        self.assertEqual(pnl["current_total_usdt"], 162)
+        self.assertEqual(pnl["current_total_mode"], "complete_strategy")
         for key in ("realized_pnl", "funding_pnl", "fees_paid", "complete"):
             snapshots, config = fixture()
             snapshots["okx"]["ledger"].pop(key)
-            self.assertIsNone(self.calculate(snapshots, config)["pnl"]["total_usdt"])
+            pnl = self.calculate(snapshots, config)["pnl"]
+            self.assertIsNone(pnl["total_usdt"])
+            self.assertEqual(pnl["current_total_usdt"], 10)
+            self.assertEqual(pnl["current_total_mode"], "current_unrealized")
 
     def test_real_zero_ledger_totals_are_valid(self):
         snapshots, config = fixture()
@@ -240,6 +246,7 @@ class EngineTests(unittest.TestCase):
             snapshot["position"]["unrealized_pnl"] = 0
             snapshot["ledger"].update(realized_pnl=0, funding_pnl=0, fees_paid=0)
         self.assertEqual(self.calculate(snapshots, config)["pnl"]["total_usdt"], 0)
+        self.assertEqual(self.calculate(snapshots, config)["pnl"]["current_total_usdt"], 0)
 
     def test_market_and_position_staleness_alert_at_15_and_hard_block_at_60(self):
         for part in ("market", "position"):

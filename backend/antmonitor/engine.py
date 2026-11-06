@@ -17,9 +17,10 @@ Public metric fields (the UI can render these directly):
   estimated_exit_cost_usdt, close_net_pnl_usdt, entry_legs, close_legs.
 * funding: legs, net_per_8h_usdt, cumulative_usdt, past_24h_usdt,
   past_7d_usdt, funding_to_initial_margin_pct. Positive cash flow is income.
-* pnl: unrealized_usdt, realized_usdt, funding_usdt, fees_usdt,
-  total_usdt, complete, legs, reasons. Realized is trading-only ledger PnL;
-  an exchange's realized aggregate is never added again to fees/funding.
+* pnl: current_total_usdt, current_total_mode, unrealized_usdt, realized_usdt,
+  funding_usdt, fees_usdt, total_usdt, complete, legs, reasons. Realized is
+  trading-only ledger PnL; an exchange's realized aggregate is never added
+  again to fees/funding.
 * risk: status, legs, freshness, fx, rules_confirmed. Risk legs include
   liquidation_buffer_pct, margin_balance, available_balance,
   maintenance_margin, balance_coverage_ratio, leverage, margin_mode, status.
@@ -629,11 +630,17 @@ def calculate(snapshots: dict, config: dict, now_ms: int) -> dict:
         pnl_reasons.append("完整策略周期的交易损益、资金费和费用账本尚未确认；近期窗口不能代替累计总额")
     if any(value is None for value in pnl.values()):
         pnl_reasons.append("存在缺失、过期的损益分项或未核实汇率，暂停总损益汇总")
-    pnl.update(total_usdt=pnl["realized_usdt"] + pnl["unrealized_usdt"] + pnl["funding_usdt"] - pnl["fees_usdt"] if pnl_complete else None,
+    strict_total = pnl["realized_usdt"] + pnl["unrealized_usdt"] + pnl["funding_usdt"] - pnl["fees_usdt"] if pnl_complete else None
+    current_total = strict_total if strict_total is not None else pnl["unrealized_usdt"]
+    current_mode = "complete_strategy" if strict_total is not None else "current_unrealized" if current_total is not None else "unavailable"
+    if current_mode == "current_unrealized":
+        pnl_reasons.append("当前整体盈亏使用两腿未实现盈亏合计；严格累计收益等待完整账本确认")
+    pnl.update(current_total_usdt=current_total, current_total_mode=current_mode,
+               total_usdt=strict_total,
                complete=pnl_complete, legs=pnl_legs, reasons=pnl_reasons,
                source={exchange: pnl_legs[exchange]["source"] for exchange in EXCHANGES},
                timestamp=_oldest(okx["position"].get("timestamp"), hl["position"].get("timestamp")),
-               formula="total = trading-only realized + unrealized + separately accounted funding − positive fees paid; only with both complete ledgers and every known component")
+               formula="current_total = strict total when complete, otherwise current unrealized PnL; strict total = trading-only realized + unrealized + separately accounted funding − positive fees paid")
     risk_status = _severity(*(leg["status"] for leg in risk_legs.values()),
                             "warning" if not rules_confirmed else "normal",
                             "unknown" if hedge_status == "unknown" or not fx_ready else "normal",
