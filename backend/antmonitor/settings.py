@@ -137,7 +137,7 @@ def validate_config(config):
         raise ValueError("手续费采用小数率，例如 0.0005")
     t = config["thresholds"]
     if not (t["liquidation_severe_pct"] < t["liquidation_critical_pct"] < t["liquidation_orange_pct"] < t["liquidation_warning_pct"] <= 100):
-        raise ValueError("强平阈值应按 8 < 12 < 20 < 30 的顺序排列")
+        raise ValueError("强平阈值需保持 severe < critical < orange < warning，critical 用作强平亏损进度叫醒阈值")
     if t["hedge_warning_pct"] >= t["hedge_critical_pct"] or t["funding_warning"] >= t["funding_critical"]:
         raise ValueError("警告阈值必须低于严重阈值")
     sources = config.get("rules", {}).get("sources", [])

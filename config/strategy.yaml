@@ -28,9 +28,9 @@ thresholds:
   funding_warning: 50
   funding_critical: 150
   net_spread_min_pct: 1
-  liquidation_warning_pct: 30
-  liquidation_orange_pct: 20
-  liquidation_critical_pct: 12
+  liquidation_warning_pct: 100
+  liquidation_orange_pct: 75
+  liquidation_critical_pct: 50
   liquidation_severe_pct: 8
   balance_safety_multiple: 2
   cooldown_seconds: 600

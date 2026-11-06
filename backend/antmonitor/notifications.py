@@ -128,6 +128,8 @@ class Notifier:
         if code in {"net_spread_low", "SPREAD_MOVE"}:
             field = "net_spread_pct" if code == "net_spread_low" else "gross_spread_pct"
             return spread.get("realtime") is True and known(spread.get(field))
+        if code == "liquidation_loss_progress":
+            return flat or (position_fresh and market_fresh and known(leg.get("liquidation_loss_progress_pct")))
         if str(code).startswith("liquidation_"):
             return flat or (position_fresh and market_fresh and known(leg.get("liquidation_buffer_pct")))
         if code == "margin_balance_low":

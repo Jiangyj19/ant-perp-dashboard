@@ -329,27 +329,36 @@ def calculate(snapshots: dict, config: dict, now_ms: int) -> dict:
                   position.get("source"), position.get("timestamp"))
         liquidation = _positive(position.get("liquidation_price")) if position_ready else None
         mark = _positive(market.get("mark")) if market_ready else None
-        buffer = None
+        buffer = loss_progress = current_loss = remaining_loss = estimated_liquidation_loss = None
         if position_ready and market_ready and not flat and side in {"long", "short"} and mark is not None and liquidation is not None:
-            buffer = ((mark - liquidation) if side == "long" else (liquidation - mark)) / mark * 100
+            distance = (mark - liquidation) if side == "long" else (liquidation - mark)
+            buffer = distance / mark * 100
             if buffer <= 0:
                 leg_status = "critical"
                 alert("liquidation_anomaly", "critical", exchange, "强平价方向异常", "强平价位于当前标记价错误一侧，需人工核对。",
                       buffer, 0, "long: (mark − liquidation) / mark × 100; short: (liquidation − mark) / mark × 100",
                       position.get("source"), _oldest(position.get("timestamp"), market.get("timestamp")))
             else:
-                for key, default, severity, code in (
-                    ("liquidation_severe_pct", 8, "critical", "liquidation_severe"),
-                    ("liquidation_critical_pct", 12, "critical", "liquidation_critical"),
-                    ("liquidation_orange_pct", 20, "warning", "liquidation_orange"),
-                    ("liquidation_warning_pct", 30, "warning", "liquidation_warning")):
-                    limit = threshold(key, default)
-                    if buffer < limit:
-                        leg_status = _severity(leg_status, severity)
-                        alert(code, severity, exchange, "强平缓冲不足", "各交易所独立承担保证金风险，另一腿浮盈不能覆盖本腿强平。",
-                              buffer, limit, "long: (mark − liquidation) / mark × 100; short: (liquidation − mark) / mark × 100",
-                              position.get("source"), _oldest(position.get("timestamp"), market.get("timestamp")))
-                        break
+                notional = _positive(position.get("notional"))
+                effective_size = notional / mark if notional is not None and mark > 0 else None
+                current_pnl = _number(position.get("unrealized_pnl"))
+                entry = _positive(position.get("entry_price"))
+                if current_pnl is None and effective_size is not None and entry is not None:
+                    current_pnl = ((mark - entry) if side == "long" else (entry - mark)) * effective_size
+                if current_pnl is not None and effective_size is not None:
+                    current_loss = max(0, -current_pnl)
+                    remaining_loss = distance * effective_size
+                    estimated_liquidation_loss = current_loss + remaining_loss
+                    if estimated_liquidation_loss > 0:
+                        loss_progress = current_loss / estimated_liquidation_loss * 100
+                        limit = threshold("liquidation_critical_pct", 50)
+                        if loss_progress >= limit:
+                            leg_status = _severity(leg_status, "critical")
+                            alert("liquidation_loss_progress", "critical", exchange, "强平亏损进度过半",
+                                  "当前浮亏已达到预计强平亏损阈值，请考虑补保证金、降杠杆或减仓。",
+                                  loss_progress, limit,
+                                  "max(0, -unrealized_pnl) / (max(0, -unrealized_pnl) + distance_to_liquidation × abs(notional / mark)) × 100",
+                                  position.get("source"), _oldest(position.get("timestamp"), market.get("timestamp")))
         balance = _number(account.get("margin_balance")) if account_ready else None
         available = _number(account.get("available_balance")) if account_ready else None
         maintenance = _nonnegative(position.get("maintenance_margin")) if position_ready else None
@@ -377,6 +386,10 @@ def calculate(snapshots: dict, config: dict, now_ms: int) -> dict:
         if freshness_status == "stale":
             leg_status = _severity(leg_status, "stale")
         risk_legs[exchange] = {"status": leg_status, "liquidation_buffer_pct": buffer,
+                               "liquidation_loss_progress_pct": loss_progress,
+                               "liquidation_current_loss": current_loss,
+                               "liquidation_remaining_loss": remaining_loss,
+                               "liquidation_estimated_loss": estimated_liquidation_loss,
                                "liquidation_price": liquidation, "mark_price": mark,
                                "margin_balance": balance, "available_balance": available,
                                "maintenance_margin": maintenance, "balance_coverage_ratio": coverage,
@@ -390,6 +403,7 @@ def calculate(snapshots: dict, config: dict, now_ms: int) -> dict:
                                "timestamp": _oldest(market.get("timestamp"), position.get("timestamp")),
                                "source": position.get("source"),
                                "formula": {"liquidation_buffer_pct": "long: (mark − liquidation) / mark × 100; short: (liquidation − mark) / mark × 100",
+                                           "liquidation_loss_progress_pct": "max(0, -unrealized_pnl) / (max(0, -unrealized_pnl) + distance_to_liquidation × abs(notional / mark)) × 100",
                                            "balance_coverage_ratio": "margin balance / maintenance margin"}}
         legs[exchange] = {"snapshot": snapshot, "market": market, "position": position, "account": account,
                           "mapping": mapping, "quote": quote, "side": side, "flat": flat,

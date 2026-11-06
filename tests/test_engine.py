@@ -359,18 +359,26 @@ class EngineTests(unittest.TestCase):
         snapshots["okx"]["position"] = None
         self.assertIsNone(self.calculate(snapshots, config)["hedge"]["okx_shares"])
 
-    def test_margin_buffer_thresholds_and_anomalous_liquidation(self):
-        for buffer, code, severity in ((25, "liquidation_warning", "warning"),
-                                       (15, "liquidation_orange", "warning"),
-                                       (10, "liquidation_critical", "critical"),
-                                       (7, "liquidation_severe", "critical"),
-                                       (-5, "liquidation_anomaly", "critical")):
-            snapshots, config = fixture()
-            snapshots["hl"]["position"]["liquidation_price"] = 250 * (1 - buffer / 100)
-            result = self.calculate(snapshots, config)
-            self.assertAlmostEqual(result["risk"]["legs"]["hl"]["liquidation_buffer_pct"], buffer)
-            item = next(alert for alert in result["alerts"] if alert["code"] == code)
-            self.assertEqual(item["severity"], severity)
+    def test_liquidation_loss_progress_alert_and_anomalous_liquidation(self):
+        snapshots, config = fixture()
+        snapshots["hl"]["position"].update(entry_price=300, unrealized_pnl=-2000, liquidation_price=199)
+        result = self.calculate(snapshots, config)
+        self.assertAlmostEqual(result["risk"]["legs"]["hl"]["liquidation_buffer_pct"], 20.4)
+        self.assertAlmostEqual(result["risk"]["legs"]["hl"]["liquidation_loss_progress_pct"], 2000 / (2000 + 2040) * 100)
+        self.assertNotIn("liquidation_loss_progress", self.codes(result))
+
+        snapshots["hl"]["position"]["liquidation_price"] = 200
+        result = self.calculate(snapshots, config)
+        self.assertAlmostEqual(result["risk"]["legs"]["hl"]["liquidation_loss_progress_pct"], 50)
+        item = next(alert for alert in result["alerts"] if alert["code"] == "liquidation_loss_progress")
+        self.assertEqual(item["severity"], "critical")
+        self.assertEqual(item["threshold"], 50)
+
+        snapshots["hl"]["position"]["liquidation_price"] = 250 * (1 + 0.05)
+        result = self.calculate(snapshots, config)
+        self.assertAlmostEqual(result["risk"]["legs"]["hl"]["liquidation_buffer_pct"], -5)
+        item = next(alert for alert in result["alerts"] if alert["code"] == "liquidation_anomaly")
+        self.assertEqual(item["severity"], "critical")
 
     def test_independent_balance_and_leverage_risks(self):
         snapshots, config = fixture()
