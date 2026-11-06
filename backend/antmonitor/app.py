@@ -159,7 +159,9 @@ def create_app(settings=None, start_monitor=True):
         return app.state.monitor.snapshot()
 
     @app.get("/api/history")
-    async def history(hours: int = 24):
+    async def history(hours: int = 24, scope: str = ""):
+        if scope in {"all", "full", "complete"} or hours <= 0:
+            return app.state.store.history(None)
         return app.state.store.history(max(1, min(hours, 720)))
 
     @app.get("/api/events")

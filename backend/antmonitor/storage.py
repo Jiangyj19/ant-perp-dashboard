@@ -49,8 +49,11 @@ class Store:
         return [{**json.loads(r["value"]), "id": r["id"], "kind": r["kind"], "timestamp": r["timestamp"]} for r in rows]
 
     def history(self, hours=24):
-        cutoff = int(time.time() * 1000) - hours * 3600000
-        rows = self.db.execute("SELECT timestamp,value FROM history WHERE timestamp>=? ORDER BY timestamp", (cutoff,)).fetchall()
+        if hours is None:
+            rows = self.db.execute("SELECT timestamp,value FROM history ORDER BY timestamp").fetchall()
+        else:
+            cutoff = int(time.time() * 1000) - hours * 3600000
+            rows = self.db.execute("SELECT timestamp,value FROM history WHERE timestamp>=? ORDER BY timestamp", (cutoff,)).fetchall()
         stride = max(1, (len(rows) + 1199) // 1200)
         return [{"timestamp": r["timestamp"], **json.loads(r["value"])} for r in rows[::stride]]
 
@@ -87,7 +90,6 @@ class Store:
 
     def prune(self):
         now = int(time.time() * 1000)
-        self.db.execute("DELETE FROM history WHERE timestamp<?", (now - 30 * 86400000,))
         self.db.execute("DELETE FROM raw WHERE timestamp<?", (now - 7 * 86400000,))
         self.db.commit()
 

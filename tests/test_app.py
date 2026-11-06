@@ -102,6 +102,17 @@ class AppTests(unittest.TestCase):
         with self.client() as client:
             self.assertEqual(client.post("/api/alerts/test").status_code, 409)
 
+    def test_history_scope_all_returns_full_retained_series(self):
+        with self.client() as client:
+            import time
+            now = int(time.time() * 1000)
+            self.app.state.store.sample(now - 90 * 86400000, {"convergence_remaining_gap_pct": 18})
+            self.app.state.store.sample(now - 60_000, {"convergence_remaining_gap_pct": 9})
+            all_rows = client.get("/api/history?scope=all").json()
+            self.assertEqual([row["convergence_remaining_gap_pct"] for row in all_rows], [18, 9])
+            day_rows = client.get("/api/history?hours=24").json()
+            self.assertEqual([row["convergence_remaining_gap_pct"] for row in day_rows], [9])
+
     def test_bark_device_key_accepts_plain_key_or_copied_url(self):
         self.assertEqual(normalize_bark_settings("https://api.day.app", "abc123"), ("https://api.day.app", "abc123"))
         self.assertEqual(normalize_bark_settings("https://api.day.app", "https://api.day.app/abc123/title/body"),

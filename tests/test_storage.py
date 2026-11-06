@@ -21,3 +21,23 @@ def test_raw_endpoint_deduplication_and_lossless_compression(tmp_path):
         assert store.db.execute("SELECT count(*) FROM raw").fetchone()[0] == 2
     finally:
         store.close()
+
+
+def test_history_scope_all_and_prune_keeps_strategy_history(tmp_path):
+    import time
+    store = Store(tmp_path)
+    try:
+        now = int(time.time() * 1000)
+        old_history = now - 90 * 86400000
+        recent_history = now - 60_000
+        old_raw = now - 8 * 86400000
+        store.sample(old_history, {"gross_spread_pct": 21})
+        store.sample(recent_history, {"gross_spread_pct": 10})
+        store.raw(old_raw, "okx", {"market": {"mark": 1}})
+        assert [row["gross_spread_pct"] for row in store.history(None)] == [21, 10]
+        assert [row["gross_spread_pct"] for row in store.history(1)] == [10]
+        store.prune()
+        assert [row["gross_spread_pct"] for row in store.history(None)] == [21, 10]
+        assert store.db.execute("SELECT count(*) FROM raw").fetchone()[0] == 0
+    finally:
+        store.close()
