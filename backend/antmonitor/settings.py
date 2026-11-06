@@ -2,6 +2,7 @@ import math
 import os
 import re
 from pathlib import Path
+from urllib.parse import urlparse
 
 import yaml
 from dotenv import load_dotenv
@@ -19,17 +20,38 @@ CONFIG_FIELDS = {
 }
 
 
+def normalize_bark_settings(server, device_key):
+    server = (server or "https://api.day.app").strip().rstrip("/")
+    device_key = (device_key or "").strip()
+    if device_key.startswith("https://"):
+        parsed = urlparse(device_key)
+        parts = [part for part in parsed.path.split("/") if part]
+        if not parsed.netloc or not parts:
+            raise ValueError("BARK_DEVICE_KEY URL 需要包含 Bark device key")
+        server = f"{parsed.scheme}://{parsed.netloc}"
+        device_key = parts[0]
+    if not server.startswith("https://") or any(c in server for c in "?#@"):
+        raise ValueError("BARK_SERVER 必须为 HTTPS 服务源地址")
+    if device_key and any(c in device_key for c in "/?#"):
+        raise ValueError("BARK_DEVICE_KEY 只填写设备 Key，或填写 https://api.day.app/<key> 形式")
+    return server, device_key
+
+
 def load_settings():
     load_dotenv(ROOT / ".env")
+    bark_server, bark_device_key = normalize_bark_settings(os.getenv("BARK_SERVER", "https://api.day.app"), os.getenv("BARK_DEVICE_KEY", ""))
+    bark_min_severity = os.getenv("BARK_MIN_SEVERITY", "warning").lower()
     settings = {key.lower(): os.getenv(key, "") for key in (
         "OKX_API_KEY", "OKX_API_SECRET", "OKX_PASSPHRASE", "HL_ADDRESS", "DASHBOARD_PASSWORD",
-        "BARK_DEVICE_KEY", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID")}
+        "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID")}
     settings.update(
         okx_base_url=os.getenv("OKX_BASE_URL", "https://www.okx.com").rstrip("/"),
         hl_base_url=os.getenv("HL_BASE_URL", "https://api.hyperliquid.xyz").rstrip("/"),
-        bark_server=os.getenv("BARK_SERVER", "https://api.day.app").rstrip("/"),
+        bark_server=bark_server,
+        bark_device_key=bark_device_key,
         bark_enabled=os.getenv("BARK_ENABLED", "false").lower() == "true",
         bark_critical=os.getenv("BARK_CRITICAL", "false").lower() == "true",
+        bark_min_severity=bark_min_severity,
         bark_volume=max(0, min(10, int(os.getenv("BARK_VOLUME", "5")))),
         telegram_enabled=os.getenv("TELEGRAM_ENABLED", "false").lower() == "true",
         cookie_secure=os.getenv("COOKIE_SECURE", "false").lower() == "true",
@@ -46,8 +68,8 @@ def load_settings():
         raise ValueError("HL_ADDRESS 需要 0x 开头的公开地址，禁止输入私钥")
     if settings["dashboard_password"] and len(settings["dashboard_password"]) < 16:
         raise ValueError("DASHBOARD_PASSWORD 至少 16 个字符")
-    if not settings["bark_server"].startswith("https://") or any(c in settings["bark_server"] for c in "?#@"):
-        raise ValueError("BARK_SERVER 必须为 HTTPS 服务源地址")
+    if settings["bark_min_severity"] not in {"info", "warning", "critical"}:
+        raise ValueError("BARK_MIN_SEVERITY 必须为 info、warning 或 critical")
     return settings
 
 

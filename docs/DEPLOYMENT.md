@@ -17,7 +17,7 @@
 
 云端网页登录密码已生成，保存在本机 `.env.cloud` 的 `DASHBOARD_PASSWORD`，不写入文档或聊天。云端 `.env` 仅服务器 root 可读；同一份配置不进入镜像、Git 或实例 metadata。
 
-本机 `.env` 和云端 `.env.cloud` 是两份独立配置。已配置用户提供的 OKX 只读凭证与 HL 公开地址。Bark 尚未配置、默认关闭。后续填写 `.env.cloud` 的 Bark 设备 Key 并设 `BARK_ENABLED=true`；需要重要警告时设 `BARK_CRITICAL=true`，并在 iPhone 中授权。更新云端环境变量：
+本机 `.env` 和云端 `.env.cloud` 是两份独立配置。已配置用户提供的 OKX 只读凭证与 HL 公开地址。Bark 尚未配置、默认关闭。后续填写 `.env.cloud` 的 Bark 设备 Key（或 `https://api.day.app/<key>` 完整地址）并设 `BARK_ENABLED=true`；默认 `BARK_MIN_SEVERITY=warning`，只推送需关注及以上风险；需要重要警告时设 `BARK_CRITICAL=true`，并在 iPhone 中授权。更新云端环境变量：
 
 ```bash
 GCP_PROJECT=orderhistory-test ./deploy/update-env.sh

@@ -33,12 +33,13 @@ chmod 600 .env
 | `OKX_BASE_URL` | 中国账户默认 `https://www.okx.com`，支持的官方地区域名见 `.env.example` 和源码 allowlist |
 | `HL_ADDRESS` | 公开钱包地址，已在本机配置用户提供地址；**不需要私钥、助记词或 agent signing key** |
 | `DASHBOARD_PASSWORD` | 远程访问必须设置，至少 16 字符；网页以 HttpOnly / SameSite 会话登录 |
-| `BARK_DEVICE_KEY` | Bark App 中的设备 Key |
+| `BARK_DEVICE_KEY` | Bark App 中的设备 Key；也可直接填 `https://api.day.app/<key>` 形式 |
 | `BARK_ENABLED` | 填好 Key 后设为 `true` |
+| `BARK_MIN_SEVERITY` | 默认 `warning`，只推送需关注 / 高风险；可设 `critical` 仅推高风险，或 `info` 推全部 |
 | `BARK_CRITICAL` | 设为 `true` 时严重风险使用 `critical` 重要警告；须在 iPhone 授权 Bark 重要警告能力，实际投递受 iOS / 网络影响 |
 | `COOKIE_SECURE` | HTTPS 反向代理部署时设 `true`；本机 HTTP 和 SSH 隧道用 `false` |
 
-Bark 请求使用 HTTPS `POST /push`，设备 Key 在 JSON 请求体中。通知不含凭证、完整钱包地址或原始账户响应。网页“发送 Bark 测试通知”会发送一条真实设备测试。未启用或未填 Key 时不发送。Telegram 是可选备选通道，默认关闭。
+Bark 请求使用 HTTPS `POST /push`，设备 Key 在 JSON 请求体中。通知不含凭证、完整钱包地址或原始账户响应。默认只推送 `warning` / `critical` 风险，不推送普通 `info` 提示；风险升级立即通知，同类风险按冷却时间合并重发。网页“发送 Bark 测试通知”会发送一条真实设备测试。未启用或未填 Key 时不发送。Telegram 是可选备选通道，默认关闭。
 
 ## 第一次接通后的核对
 

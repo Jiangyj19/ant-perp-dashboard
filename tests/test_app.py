@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 from antmonitor.app import create_app
-from antmonitor.settings import ROOT
+from antmonitor.settings import ROOT, normalize_bark_settings
 
 
 class AppTests(unittest.TestCase):
@@ -90,6 +90,11 @@ class AppTests(unittest.TestCase):
     def test_notification_test_requires_a_configured_channel(self):
         with self.client() as client:
             self.assertEqual(client.post("/api/alerts/test").status_code, 409)
+
+    def test_bark_device_key_accepts_plain_key_or_copied_url(self):
+        self.assertEqual(normalize_bark_settings("https://api.day.app", "abc123"), ("https://api.day.app", "abc123"))
+        self.assertEqual(normalize_bark_settings("https://api.day.app", "https://api.day.app/abc123/title/body"),
+                         ("https://api.day.app", "abc123"))
 
     def test_public_api_data_omits_credentials_and_full_wallet_address(self):
         with self.client() as client:

@@ -11,6 +11,10 @@ class Notifier:
         self.settings, self.store = settings, store
         self.client = httpx.AsyncClient(timeout=10, follow_redirects=False)
 
+    @staticmethod
+    def _severity_rank_name(value):
+        return {"info": 0, "warning": 10, "critical": 20}.get(str(value or "warning").lower(), 10)
+
     async def send(self, alert):
         s = self.settings
         stamp = alert.get("timestamp")
@@ -35,23 +39,26 @@ class Notifier:
         body = re.sub(r"0x[0-9a-fA-F]{40}", lambda match: match.group(0)[:6] + "…" + match.group(0)[-4:], body)
         results = {}
         if s.get("bark_enabled") and s.get("bark_device_key"):
-            critical = s.get("bark_critical") and alert.get("severity") == "critical"
-            payload = {
-                "device_key": s["bark_device_key"], "title": f"ANT · {alert.get('title', '风险提示')}",
-                "body": body, "group": "ANT 套利监控", "isArchive": 1,
-                "level": "critical" if critical else "timeSensitive",
-            }
-            if critical:
-                payload["volume"] = s.get("bark_volume", 5)
-                payload["sound"] = "alarm"
-            try:
-                response = await self.client.post(s["bark_server"] + "/push", json=payload)
-                response.raise_for_status()
-                if response.json().get("code") != 200:
-                    raise ValueError("push rejected")
-                results["bark"] = "sent"
-            except Exception:
-                results["bark"] = "failed"
+            if self._severity_rank_name(alert.get("severity")) < self._severity_rank_name(s.get("bark_min_severity", "warning")):
+                results["bark"] = "skipped"
+            else:
+                critical = s.get("bark_critical") and alert.get("severity") == "critical"
+                payload = {
+                    "device_key": s["bark_device_key"], "title": f"ANT · {alert.get('title', '风险提示')}",
+                    "body": body, "group": "ANT 套利监控", "isArchive": 1,
+                    "level": "critical" if critical else "timeSensitive",
+                }
+                if critical:
+                    payload["volume"] = s.get("bark_volume", 5)
+                    payload["sound"] = "alarm"
+                try:
+                    response = await self.client.post(s["bark_server"] + "/push", json=payload)
+                    response.raise_for_status()
+                    if response.json().get("code") != 200:
+                        raise ValueError("push rejected")
+                    results["bark"] = "sent"
+                except Exception:
+                    results["bark"] = "failed"
         if s.get("telegram_enabled") and s.get("telegram_bot_token") and s.get("telegram_chat_id"):
             try:
                 response = await self.client.post("https://api.telegram.org/bot" + s["telegram_bot_token"] + "/sendMessage", json={
@@ -76,7 +83,7 @@ class Notifier:
 
     @staticmethod
     def _rank(alert):
-        rank = {"info": 0, "warning": 10, "critical": 20}.get(alert.get("severity"), 10)
+        rank = Notifier._severity_rank_name(alert.get("severity"))
         return rank + {"liquidation_warning": 1, "liquidation_orange": 2,
                        "liquidation_critical": 3, "liquidation_severe": 4,
                        "liquidation_anomaly": 5}.get(alert.get("code"), 0)

@@ -136,6 +136,17 @@ class NotificationTests(unittest.IsolatedAsyncioTestCase):
         finally:
             await notifier.close()
 
+    async def test_bark_default_minimum_skips_info_notifications(self):
+        notifier = Notifier({"bark_enabled": True, "bark_device_key": "test-key", "bark_server": "https://api.day.app",
+                             "bark_min_severity": "warning"}, self.store)
+        notifier.client.post = AsyncMock()
+        try:
+            result = await notifier.send({**warning(severity="info"), "title": "信息提示"})
+            self.assertEqual(result, {"bark": "skipped"})
+            notifier.client.post.assert_not_called()
+        finally:
+            await notifier.close()
+
 
 class ServiceTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):

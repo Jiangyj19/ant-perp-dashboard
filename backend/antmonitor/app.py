@@ -128,7 +128,7 @@ def create_app(settings=None, start_monitor=True):
         address = s.get("hl_address", "")
         return {"okx": {"configured": all(s.get(key) for key in ("okx_api_key", "okx_api_secret", "okx_passphrase")), "base_url": s["okx_base_url"]},
                 "hl": {"configured": bool(address), "address_masked": address[:6] + "…" + address[-4:] if address else None},
-                "bark": {"enabled": s.get("bark_enabled", False), "configured": bool(s.get("bark_device_key")), "critical": s.get("bark_critical", False)},
+                "bark": {"enabled": s.get("bark_enabled", False), "configured": bool(s.get("bark_device_key")), "critical": s.get("bark_critical", False), "min_severity": s.get("bark_min_severity", "warning")},
                 "telegram": {"enabled": s.get("telegram_enabled", False), "configured": bool(s.get("telegram_bot_token") and s.get("telegram_chat_id"))},
                 "storage": {"enabled": True}, "readonly": True, "version": "1.0.0", "public_ws": s.get("enable_public_ws", True)}
 
