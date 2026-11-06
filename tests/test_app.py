@@ -9,7 +9,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
-from antmonitor.app import create_app
+from antmonitor.app import SESSION_MAX_AGE_SECONDS, create_app
 from antmonitor.settings import ROOT, normalize_bark_settings
 
 
@@ -61,6 +61,7 @@ class AppTests(unittest.TestCase):
             cookie = login.headers["set-cookie"].lower()
             self.assertIn("httponly", cookie)
             self.assertIn("samesite=strict", cookie)
+            self.assertIn(f"max-age={SESSION_MAX_AGE_SECONDS}", cookie)
             self.assertEqual(client.get("/api/status").status_code, 200)
             token = client.cookies["ant_session"]
             client.cookies.set("ant_session", token + "tampered", domain="testserver.local", path="/")
@@ -69,6 +70,16 @@ class AppTests(unittest.TestCase):
             client.post("/api/auth/login", json={"password": self.settings["dashboard_password"]})
             self.assertEqual(client.post("/api/auth/logout").status_code, 200)
             self.assertEqual(client.get("/api/status").status_code, 401)
+
+    def test_authentication_cookie_survives_app_restart(self):
+        self.settings["dashboard_password"] = "valid-test-password-1234"
+        with self.client(client=("198.51.100.20", 12000)) as client:
+            response = client.post("/api/auth/login", json={"password": self.settings["dashboard_password"]})
+            self.assertEqual(response.status_code, 200)
+            token = client.cookies["ant_session"]
+        with self.client(client=("198.51.100.20", 12000)) as client:
+            client.cookies.set("ant_session", token, domain="testserver.local", path="/")
+            self.assertEqual(client.get("/api/status").status_code, 200)
 
     def test_cross_site_state_changes_are_rejected_before_mutation(self):
         with self.client() as client:

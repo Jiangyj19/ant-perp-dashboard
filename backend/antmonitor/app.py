@@ -18,10 +18,32 @@ from .service import Monitor, now_ms
 from .settings import ROOT, load_settings, read_config, validate_config
 from .storage import Store
 
+SESSION_MAX_AGE_SECONDS = 7 * 24 * 3600
+SESSION_SECRET_FILE = ".session_secret"
+
+
+def load_session_secret(data_dir):
+    path = Path(data_dir) / SESSION_SECRET_FILE
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if path.exists():
+            value = path.read_text().strip()
+            if value:
+                return base64.urlsafe_b64decode(value.encode())
+        secret = secrets.token_bytes(32)
+        path.write_text(base64.urlsafe_b64encode(secret).decode())
+        try:
+            path.chmod(0o600)
+        except OSError:
+            pass
+        return secret
+    except (OSError, ValueError, TypeError):
+        return secrets.token_bytes(32)
+
 
 def create_app(settings=None, start_monitor=True):
     s = settings or load_settings()
-    session_secret = secrets.token_bytes(32)
+    session_secret = load_session_secret(s["data_dir"])
     login_attempts = {}
 
     @asynccontextmanager
@@ -111,10 +133,10 @@ def create_app(settings=None, start_monitor=True):
             await asyncio.sleep(0.25)
             raise HTTPException(401, "密码错误")
         login_attempts.pop(ip, None)
-        payload = str(int(time.time()) + 12 * 3600)
+        payload = str(int(time.time()) + SESSION_MAX_AGE_SECONDS)
         signature = hmac.new(session_secret, payload.encode(), hashlib.sha256).hexdigest()
         response = JSONResponse({"authenticated": True})
-        response.set_cookie("ant_session", payload + "." + signature, httponly=True, secure=s.get("cookie_secure", False), samesite="strict", max_age=12*3600)
+        response.set_cookie("ant_session", payload + "." + signature, httponly=True, secure=s.get("cookie_secure", False), samesite="strict", max_age=SESSION_MAX_AGE_SECONDS)
         return response
 
     @app.post("/api/auth/logout")
