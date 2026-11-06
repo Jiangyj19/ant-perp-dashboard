@@ -144,6 +144,26 @@ class EngineTests(unittest.TestCase):
         self.assertAlmostEqual(spread["estimated_slippage_usdt"], 35)
         self.assertAlmostEqual(spread["net_spread_pct"], (59.25 - 50.3 - 15.985 / 100) / 50.3 * 100)
 
+    def test_capitalization_view_reports_equity_basis_convergence(self):
+        cap = self.calculate()["capitalization"]
+        self.assertAlmostEqual(cap["hl_share_price_usdt"], 50)
+        self.assertAlmostEqual(cap["fd_share_price_usdt"], 24)
+        self.assertAlmostEqual(cap["total_share_price_usdt"], 60)
+        self.assertAlmostEqual(cap["fd_discount_pct"], -52)
+        self.assertAlmostEqual(cap["remaining_gap_pct"], 20)
+        self.assertEqual(cap["rows"][0]["label"], "OKX · io")
+
+    def test_ant_scale_capitalization_uses_okx_fully_diluted_factor(self):
+        snapshots, config = fixture()
+        config["conversion"].update(okx_shares_per_contract=1.275, hl_io_shares_per_contract=16.93)
+        snapshots["okx"]["market"]["mark"] = 144.82
+        snapshots["hl"]["market"]["mark"] = 1679.3
+        cap = self.calculate(snapshots, config)["capitalization"]
+        self.assertAlmostEqual(cap["factors"]["okx_fully_diluted"], 1.693)
+        self.assertAlmostEqual(cap["hl_share_price_usdt"], 1679.3 / 16.93)
+        self.assertAlmostEqual(cap["fd_share_price_usdt"], 144.82 / 1.693)
+        self.assertAlmostEqual(cap["total_share_price_usdt"], 144.82 / 1.275)
+
     def test_close_vwap_covers_current_positions_and_fees_are_not_double_counted(self):
         spread = self.calculate()["spread"]
         self.assertEqual(spread["close_legs"]["okx"]["requested_raw"], 100)

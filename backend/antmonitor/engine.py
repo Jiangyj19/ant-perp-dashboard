@@ -11,6 +11,9 @@ Public metric fields (the UI can render these directly):
 * spread: okx_share_price, hl_share_price (native quote),
   hl_share_price_usdt, gross_spread_pct, top_of_book_pct, depth_spread_pct,
   net_spread_pct, target_shares, estimated_fees_usdt,
+* capitalization: provisional equity-basis convergence view used for dashboard
+  layout: HL io per-share price, OKX fully-diluted equivalent, OKX post-IPO
+  equivalent, current remaining convergence gap.
   estimated_slippage_usdt, theoretical_profit_usdt (matched held shares),
   theoretical_target_profit_usdt, estimated_net_convergence_usdt,
   close_pnl_usdt, close_fees_usdt, close_slippage_usdt,
@@ -519,6 +522,51 @@ def calculate(snapshots: dict, config: dict, now_ms: int) -> dict:
     close_slippage = _sum_known([close_legs[exchange]["slippage_usdt"] for exchange in EXCHANGES])
     exit_cost = close_fees + close_slippage if close_fees is not None and close_slippage is not None else None
     close_net = close_pnl - close_fees if close_pnl is not None and close_fees is not None else None
+
+    def mark_usdt(exchange: str) -> float | None:
+        leg = legs[exchange]
+        value = _positive(leg["market"].get("mark"))
+        if not leg["market_ready"] or not leg["market_valid"] or value is None:
+            return None
+        return usdt(value, leg["quote"])
+
+    hl_fd_factor = _positive(conversion.get("hl_io_shares_per_contract"))
+    okx_total_factor = _positive(conversion.get("okx_shares_per_contract"))
+    # OKX ANTHROPIC marks are quoted on a one-tenth contract scale versus the
+    # full io/HL share divisor in the strategy report. Keep this provisional
+    # dashboard view separate from confirmed hedge math, which still requires
+    # explicit unit mapping before it can be treated as authoritative.
+    okx_fd_factor = _positive(conversion.get("okx_fully_diluted_shares_per_contract"))
+    if okx_fd_factor is None and hl_fd_factor is not None and okx_total_factor is not None:
+        okx_fd_factor = hl_fd_factor / 10 if hl_fd_factor > okx_total_factor * 5 else hl_fd_factor
+    hl_mark_usdt, okx_mark_usdt = mark_usdt("hl"), mark_usdt("okx")
+    cap_hl_share = hl_mark_usdt / hl_fd_factor if hl_mark_usdt is not None and hl_fd_factor is not None else None
+    cap_fd_share = okx_mark_usdt / okx_fd_factor if okx_mark_usdt is not None and okx_fd_factor is not None else None
+    cap_total_share = okx_mark_usdt / okx_total_factor if okx_mark_usdt is not None and okx_total_factor is not None else None
+    cap_fd_gap = spread_pct(cap_fd_share, cap_hl_share)
+    cap_remaining = spread_pct(cap_total_share, cap_hl_share)
+    capitalization = {
+        "hl_share_price_usdt": cap_hl_share,
+        "fd_share_price_usdt": cap_fd_share,
+        "total_share_price_usdt": cap_total_share,
+        "fd_discount_pct": cap_fd_gap,
+        "remaining_gap_pct": cap_remaining,
+        "realtime": cap_remaining is not None,
+        "status": "provisional" if cap_remaining is not None and not rules_confirmed else "normal" if cap_remaining is not None else "unknown",
+        "provisional": not rules_confirmed or okx_fd_factor is not None,
+        "factors": {"hl_fully_diluted": hl_fd_factor, "okx_fully_diluted": okx_fd_factor, "okx_post_ipo_total": okx_total_factor},
+        "rows": [{"label": "OKX · io", "hl_share_price_usdt": cap_hl_share, "fd_share_price_usdt": cap_fd_share,
+                  "fd_discount_pct": cap_fd_gap, "total_share_price_usdt": cap_total_share,
+                  "remaining_gap_pct": cap_remaining}],
+        "source": {**sources, "conversion": conversion.get("source")},
+        "timestamp": common_timestamp,
+        "reasons": ([] if rules_confirmed else ["股本折算沿用报告参数，仍需官方来源确认；该表只用于观察收敛趋势"]),
+        "formula": {"hl_share_price_usdt": "HL mark × FX / hl_io_shares_per_contract",
+                    "fd_share_price_usdt": "OKX mark / okx_fully_diluted_shares_per_contract (defaults to HL divisor ÷ 10)",
+                    "total_share_price_usdt": "OKX mark / okx_shares_per_contract",
+                    "remaining_gap_pct": "OKX post-IPO total-share equivalent / HL io per-share price − 1",
+                    "fd_discount_pct": "OKX fully-diluted equivalent / HL io per-share price − 1"}
+    }
     spread_reasons = []
     if not fx_ready:
         spread_reasons.append("缺少已核实且 60 秒内更新的 USDC/USDT 汇率")
@@ -653,4 +701,4 @@ def calculate(snapshots: dict, config: dict, now_ms: int) -> dict:
             "fx": fx, "rules_confirmed": rules_confirmed,
             "source": sources, "timestamp": common_timestamp,
             "formula": "Evaluate each exchange independently; no cross-exchange collateral netting"}
-    return {"hedge": hedge, "spread": spread, "funding": funding, "pnl": pnl, "risk": risk, "alerts": alerts}
+    return {"hedge": hedge, "spread": spread, "capitalization": capitalization, "funding": funding, "pnl": pnl, "risk": risk, "alerts": alerts}

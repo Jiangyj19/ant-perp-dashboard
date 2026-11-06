@@ -140,6 +140,8 @@ class Monitor:
                     self.store.sample(timestamp, {
                         "gross_spread_pct": current_spread,
                         "net_spread_pct": self.metrics.get("spread", {}).get("net_spread_pct"),
+                        "convergence_remaining_gap_pct": self.metrics.get("capitalization", {}).get("remaining_gap_pct"),
+                        "convergence_fd_discount_pct": self.metrics.get("capitalization", {}).get("fd_discount_pct"),
                         "mismatch_pct": self.metrics.get("hedge", {}).get("mismatch_pct"),
                         "total_pnl": self.metrics.get("pnl", {}).get("total_usdt"),
                         "funding_pnl": self.metrics.get("funding", {}).get("cumulative_usdt"),
