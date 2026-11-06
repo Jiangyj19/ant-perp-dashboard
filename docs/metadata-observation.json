@@ -1,0 +1,298 @@
+{
+  "observed_at_utc": "2026-11-06T05:59:48.415881+00:00",
+  "purpose": "Public metadata observation, not a quote snapshot or IPO conversion guarantee. No account payload or address retained.",
+  "okx": {
+    "source": "https://www.okx.com/api/v5/public/instruments?instType=SWAP&instId=ANTHROPIC-USDT-SWAP",
+    "instrument": {
+      "alias": "",
+      "auctionEndTime": "",
+      "baseCcy": "",
+      "category": "1",
+      "contTdSwTime": "",
+      "ctMult": "1",
+      "ctType": "linear",
+      "ctVal": "1",
+      "ctValCcy": "ANTHROPIC",
+      "expTime": "",
+      "floatPxLmtPct": "0.025",
+      "freq": "",
+      "futureSettlement": false,
+      "groupId": "4",
+      "initPxLmtPct": "0.025",
+      "instCategory": "3",
+      "instFamily": "ANTHROPIC-USDT",
+      "instId": "ANTHROPIC-USDT-SWAP",
+      "instIdCode": 270079,
+      "instType": "SWAP",
+      "lever": "20",
+      "listTime": "1778146200000",
+      "longPosRemainingQuota": "",
+      "lotSz": "0.001",
+      "maxIcebergSz": "100000000.0000000000000000",
+      "maxLmtAmt": "20000000",
+      "maxLmtSz": "100000000",
+      "maxMktAmt": "",
+      "maxMktSz": "60",
+      "maxPlatOICoinLmt": "",
+      "maxPlatOILmt": "",
+      "maxPxLmtPct": "0.15",
+      "maxStopSz": "60",
+      "maxTriggerSz": "100000000.0000000000000000",
+      "maxTwapSz": "100000000.0000000000000000",
+      "method": "",
+      "minSz": "0.001",
+      "openType": "fix_price",
+      "optType": "",
+      "posLmtAmt": "250000",
+      "posLmtPct": "30",
+      "preMktSwTime": "",
+      "quoteCcy": "",
+      "rpiMinLevel": "2",
+      "rpiMinPxBand": "20",
+      "ruleType": "pre_market",
+      "seriesId": "",
+      "settleCcy": "USDT",
+      "shortPosRemainingQuota": "",
+      "state": "live",
+      "stk": "",
+      "tickSz": "0.01",
+      "tradeQuoteCcyList": [],
+      "uly": "ANTHROPIC-USDT",
+      "upcChg": []
+    }
+  },
+  "hyperliquid": {
+    "source": "https://api.hyperliquid.xyz/info",
+    "requests": [
+      {
+        "type": "perpDexs"
+      },
+      {
+        "type": "metaAndAssetCtxs",
+        "dex": "io"
+      }
+    ],
+    "dex": {
+      "name": "io",
+      "fullName": "EntropyIO"
+    },
+    "collateralToken": 0,
+    "exact_universe": [
+      {
+        "szDecimals": 3,
+        "name": "io:OAI",
+        "maxLeverage": 6,
+        "marginTableId": 6,
+        "onlyIsolated": true,
+        "marginMode": "noCross",
+        "growthMode": "enabled",
+        "lastFeeScaleChangeTime": "2026-09-02T13:30:38.854252862",
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 3,
+        "name": "io:ANTH",
+        "maxLeverage": 15,
+        "marginTableId": 15,
+        "onlyIsolated": true,
+        "marginMode": "noCross",
+        "growthMode": "enabled",
+        "lastFeeScaleChangeTime": "2026-08-19T14:12:26.461176669",
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 4,
+        "name": "io:SNDK",
+        "maxLeverage": 15,
+        "marginTableId": 15,
+        "onlyIsolated": true,
+        "marginMode": "noCross",
+        "growthMode": "enabled",
+        "lastFeeScaleChangeTime": "2026-08-19T14:12:26.461176669",
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 2,
+        "name": "io:IONQ",
+        "maxLeverage": 10,
+        "marginTableId": 10,
+        "onlyIsolated": true,
+        "marginMode": "noCross",
+        "growthMode": "enabled",
+        "lastFeeScaleChangeTime": "2026-09-10T14:01:26.289102087",
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 2,
+        "name": "io:NBIS",
+        "maxLeverage": 15,
+        "marginTableId": 15,
+        "onlyIsolated": true,
+        "marginMode": "noCross",
+        "growthMode": "enabled",
+        "lastFeeScaleChangeTime": "2026-08-28T13:48:16.121937096",
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 2,
+        "name": "io:EWY",
+        "maxLeverage": 25,
+        "marginTableId": 25,
+        "onlyIsolated": true,
+        "marginMode": "noCross",
+        "growthMode": "enabled",
+        "lastFeeScaleChangeTime": "2026-09-18T14:52:57.947522621",
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 1,
+        "name": "io:GPRO",
+        "maxLeverage": 5,
+        "marginTableId": 5,
+        "onlyIsolated": true,
+        "marginMode": "noCross",
+        "growthMode": "enabled",
+        "lastFeeScaleChangeTime": "2026-09-01T12:59:41.556900358",
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 2,
+        "name": "io:SBE",
+        "maxLeverage": 6,
+        "marginTableId": 6,
+        "onlyIsolated": true,
+        "isDelisted": true,
+        "marginMode": "strictIsolated",
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 3,
+        "name": "io:TCNT",
+        "maxLeverage": 10,
+        "marginTableId": 10,
+        "onlyIsolated": true,
+        "marginMode": "noCross",
+        "growthMode": "enabled",
+        "lastFeeScaleChangeTime": "2026-10-05T01:15:50.921503839",
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 2,
+        "name": "io:DRAM",
+        "maxLeverage": 25,
+        "marginTableId": 25,
+        "onlyIsolated": true,
+        "marginMode": "noCross",
+        "growthMode": "enabled",
+        "lastFeeScaleChangeTime": "2026-09-17T14:13:29.021347128",
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 1,
+        "name": "io:PRL",
+        "maxLeverage": 3,
+        "marginTableId": 3,
+        "onlyIsolated": true,
+        "marginMode": "noCross",
+        "growthMode": "enabled",
+        "lastFeeScaleChangeTime": "2026-10-14T17:40:41.635687690",
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 2,
+        "name": "io:XIAOMI",
+        "maxLeverage": 10,
+        "marginTableId": 10,
+        "onlyIsolated": true,
+        "marginMode": "noCross",
+        "growthMode": "enabled",
+        "lastFeeScaleChangeTime": "2026-10-12T02:02:13.298330968",
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 2,
+        "name": "io:H100",
+        "maxLeverage": 10,
+        "marginTableId": 10,
+        "onlyIsolated": true,
+        "isDelisted": true,
+        "marginMode": "strictIsolated",
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 3,
+        "name": "io:MOONSHOT",
+        "maxLeverage": 6,
+        "marginTableId": 6,
+        "onlyIsolated": true,
+        "isDelisted": true,
+        "marginMode": "strictIsolated",
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 3,
+        "name": "io:NVDA",
+        "maxLeverage": 25,
+        "marginTableId": 25,
+        "onlyIsolated": true,
+        "marginMode": "strictIsolated",
+        "growthMode": "enabled",
+        "lastFeeScaleChangeTime": "2026-10-27T14:54:43.587693751",
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 3,
+        "name": "io:SKHX",
+        "maxLeverage": 25,
+        "marginTableId": 25,
+        "onlyIsolated": true,
+        "isDelisted": true,
+        "marginMode": "strictIsolated",
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 3,
+        "name": "io:AAPL",
+        "maxLeverage": 25,
+        "marginTableId": 25,
+        "onlyIsolated": true,
+        "marginMode": "strictIsolated",
+        "growthMode": "enabled",
+        "lastFeeScaleChangeTime": "2026-11-02T17:46:36.348525968",
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 3,
+        "name": "io:CRCL",
+        "maxLeverage": 15,
+        "marginTableId": 15,
+        "onlyIsolated": true,
+        "marginMode": "strictIsolated",
+        "growthMode": "enabled",
+        "lastFeeScaleChangeTime": "2026-11-03T16:02:27.455791473",
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 3,
+        "name": "io:GOOGL",
+        "maxLeverage": 25,
+        "marginTableId": 25,
+        "onlyIsolated": true,
+        "isDelisted": true,
+        "marginMode": "strictIsolated",
+        "deployerFeeScale": "1.0"
+      }
+    ],
+    "spec_expected_coin": "io:ANT",
+    "expected_coin_exists": false,
+    "observed_anthropic_candidate": "io:ANTH",
+    "note": "No alias substitution is done by adapters. Actual coin selection is an audited operator configuration."
+  },
+  "conversion": {
+    "okx_contracts_per_raw_unit": null,
+    "okx_price_per_contract_multiplier": null,
+    "hl_contracts_per_raw_unit": null,
+    "hl_price_per_contract_multiplier": null,
+    "reason": "Metadata does not establish IPO/report reference contract equivalence. Requires manual actual fill and official rule validation."
+  }
+}

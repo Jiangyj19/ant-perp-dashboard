@@ -1,0 +1,44 @@
+strategy:
+  name: ANT_IO_LONG_OKX_SHORT
+  okx_instrument: ANTHROPIC-USDT-SWAP
+  hyperliquid_coin: ANTH
+  hyperliquid_market_variant: io
+  target_leverage_okx: 4
+  target_leverage_hl: 4
+conversion:
+  okx_shares_per_contract: 1.275
+  hl_io_shares_per_contract: 16.93
+  source: ANT 策略报告（2026-11-03），尚未获得交易所最终确认
+  status: provisional_not_exchange_confirmed
+  last_reviewed: '2026-11-06'
+  confirmed_by: ''
+  okx_contracts_per_raw_unit: null
+  okx_price_per_contract_multiplier: null
+  hl_contracts_per_raw_unit: null
+  hl_price_per_contract_multiplier: null
+  units_confirmed: false
+fx:
+  usdc_usdt: null
+  verified: false
+  timestamp: null
+  source: ''
+thresholds:
+  hedge_warning_pct: 0.5
+  hedge_critical_pct: 1
+  funding_warning: 50
+  funding_critical: 150
+  net_spread_min_pct: 1
+  liquidation_warning_pct: 30
+  liquidation_orange_pct: 20
+  liquidation_critical_pct: 12
+  liquidation_severe_pct: 8
+  balance_safety_multiple: 2
+  cooldown_seconds: 600
+fees:
+  okx_taker: 0.0005
+  hl_taker: 0.00045
+execution:
+  target_shares: 100
+rules:
+  ipo_status: 待可靠来源确认
+  sources: []
