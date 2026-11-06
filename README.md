@@ -84,6 +84,8 @@ docker compose ps
 
 参见 [部署说明](deploy/README.md)。推荐持久 VM + Docker，让后台持续采集并保留 SQLite；默认通过 IAP SSH 隧道访问，不把账户资产网页公开到互联网。Cloud Run 的实例生命周期与默认 CPU 分配不适合此版本的持续后台进程和本地 SQLite。
 
+已配置 `PUBLIC_DOMAIN` 时，会额外启动 Caddy 公网 HTTPS 反向代理；应用仍需要网页密码登录，账户接口仍是只读。
+
 ## 验证
 
 ```bash

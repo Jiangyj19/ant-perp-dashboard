@@ -12,24 +12,41 @@ ARCHIVE="work/github-actions-source.tar.gz"
 REMOTE_ARCHIVE="ant-monitor-source-${GITHUB_SHA:-manual}.tar.gz"
 
 TAR_ARGS=()
-if tar --help 2>&1 | grep -q -- '--no-xattrs'; then
+if tar --disable-copyfile -cf /dev/null -T /dev/null >/dev/null 2>&1; then
+  TAR_ARGS+=(--disable-copyfile)
+fi
+if tar --no-xattrs -cf /dev/null -T /dev/null >/dev/null 2>&1; then
   TAR_ARGS+=(--no-xattrs)
 fi
-if tar --help 2>&1 | grep -q -- '--no-mac-metadata'; then
+if tar --no-mac-metadata -cf /dev/null -T /dev/null >/dev/null 2>&1; then
   TAR_ARGS+=(--no-mac-metadata)
 fi
 
-COPYFILE_DISABLE=1 tar "${TAR_ARGS[@]}" \
-  --exclude='.env*' \
-  --exclude='.git' \
-  --exclude='.venv' \
-  --exclude='data' \
-  --exclude='work' \
-  --exclude='frontend/node_modules' \
-  --exclude='frontend/dist' \
-  --exclude='__pycache__' \
-  --exclude='.pytest_cache' \
-  -czf "$ARCHIVE" .
+if ((${#TAR_ARGS[@]})); then
+  COPYFILE_DISABLE=1 tar "${TAR_ARGS[@]}" \
+    --exclude='.env*' \
+    --exclude='.git' \
+    --exclude='.venv' \
+    --exclude='data' \
+    --exclude='work' \
+    --exclude='frontend/node_modules' \
+    --exclude='frontend/dist' \
+    --exclude='__pycache__' \
+    --exclude='.pytest_cache' \
+    -czf "$ARCHIVE" .
+else
+  COPYFILE_DISABLE=1 tar \
+    --exclude='.env*' \
+    --exclude='.git' \
+    --exclude='.venv' \
+    --exclude='data' \
+    --exclude='work' \
+    --exclude='frontend/node_modules' \
+    --exclude='frontend/dist' \
+    --exclude='__pycache__' \
+    --exclude='.pytest_cache' \
+    -czf "$ARCHIVE" .
+fi
 
 gcloud compute scp "$ARCHIVE" "$GCP_INSTANCE:$REMOTE_ARCHIVE" \
   --project="$GCP_PROJECT" \
@@ -56,13 +73,20 @@ sudo chown -R root:root "$NEXT_DIR"
 sudo mv "$APP_DIR" "$PREV_DIR"
 sudo mv "$NEXT_DIR" "$APP_DIR"
 cd "$APP_DIR"
-if command -v docker-compose >/dev/null 2>&1; then
-  sudo docker-compose -f compose.yaml up -d --build --remove-orphans
-  sudo docker-compose -f compose.yaml ps
-else
-  sudo docker compose -f compose.yaml up -d --build --remove-orphans
-  sudo docker compose -f compose.yaml ps
+COMPOSE_ARGS="-f compose.yaml"
+if sudo grep -Eq '^PUBLIC_DOMAIN=.+$' .env; then
+  COMPOSE_ARGS="$COMPOSE_ARGS -f deploy/compose.public.yaml"
 fi
+if command -v docker-compose >/dev/null 2>&1; then
+  compose() { sudo docker-compose $COMPOSE_ARGS "$@"; }
+else
+  compose() { sudo docker compose $COMPOSE_ARGS "$@"; }
+fi
+compose up -d --build --remove-orphans
+if sudo grep -Eq '^PUBLIC_DOMAIN=.+$' .env; then
+  compose exec -T proxy caddy reload --config /etc/caddy/Caddyfile || compose restart proxy
+fi
+compose ps
 sudo rm -rf "$PREV_DIR"
 REMOTE_SCRIPT
 )
